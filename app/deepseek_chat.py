@@ -16,22 +16,47 @@ def main() -> None:
         base_url="https://api.deepseek.com",
     )
 
-    response = client.chat.completions.create(
-        model="deepseek-v4-flash",
-        messages=[
-            {
-                "role": "system",
-                "content": "你是一个简洁、友好的大模型学习助手。",
-            },
+    messages = [
+        {
+            "role": "system",
+            "content": "你是一个简洁、友好的大模型学习助手。",
+        }
+    ]
+
+    print("DeepSeek 聊天已启动，输入 exit 退出。")
+
+    while True:
+        user_input = input("\nYou: ").strip()
+
+        if user_input.lower() == "exit":
+            print("已退出聊天。")
+            break
+
+        if not user_input:
+            continue
+
+        messages.append(
             {
                 "role": "user",
-                "content": "请用三句话解释什么是 AI Agent。",
-            },
-        ],
-        extra_body={"thinking": {"type": "disabled"}},
-    )
+                "content": user_input,
+            }
+        )
 
-    print(response.choices[0].message.content)
+        response = client.chat.completions.create(
+            model="deepseek-v4-flash",
+            messages=messages,
+            extra_body={"thinking": {"type": "disabled"}},
+        )
+
+        answer = response.choices[0].message.content
+        print(f"Assistant: {answer}")
+
+        messages.append(
+            {
+                "role": "assistant",
+                "content": answer,
+            }
+        )
 
 
 if __name__ == "__main__":
