@@ -4,8 +4,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from app.tools import calculate
-
+from app.tools import calculate, read_file
 
 TOOLS = [
     {
@@ -33,33 +32,60 @@ TOOLS = [
                 "required": ["left", "right", "operator"],
                 "additionalProperties": False,
             },
+
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "读取 data 文件夹内指定的 UTF-8 文本文件。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "文件名，例如 energy_note.txt，不包含路径。",
+                    }
+                },
+                "required": ["filename"],
+                "additionalProperties": False,
+            },
         },
     }
 ]
 
 
 def execute_tool(name: str, arguments: str) -> str:
-    if name != "calculate":
-        return f"未知工具：{name}"
+
 
     try:
         data = json.loads(arguments)
-        left = data["left"]
-        right = data["right"]
-        operator = data["operator"]
 
-        if isinstance(left, bool) or isinstance(right, bool):
-            raise ValueError("数字参数不能是布尔值。")
-        if not isinstance(left, (int, float)):
-            raise ValueError("left 必须是数字。")
-        if not isinstance(right, (int, float)):
-            raise ValueError("right 必须是数字。")
+        if name == "calculate":
+            left = data["left"]
+            right = data["right"]
+            operator = data["operator"]
 
-        result = calculate(left, right, operator)
-        print(f"[Tool] calculate({left}, {right}, '{operator}') -> {result}")
-        return str(result)
+            result = calculate(left, right, operator)
+            print(f"[Tool] calculate({left}, {right}, '{operator}') -> {result}")
+            return str(result)
 
-    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        if name == "read_file":
+            filename = data["filename"]
+            result = read_file(filename)
+            print(f"[Tool] read_file('{filename}')")
+            return result
+
+        return f"未知工具：{name}"
+
+    except (
+            json.JSONDecodeError,
+            FileNotFoundError,
+            KeyError,
+            TypeError,
+            ValueError,
+    ) as error:
         return f"工具执行失败：{error}"
 
 

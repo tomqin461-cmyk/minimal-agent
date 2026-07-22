@@ -16,3 +16,10 @@ def test_divide_by_zero() -> None:
         assert str(error) == "除数不能为 0。"
     else:
         raise AssertionError("应该抛出 ValueError")
+
+from app.tools import read_file
+
+
+def test_read_file() -> None:
+    content = read_file("energy_note.txt")
+    assert "四川盆地" in content
