@@ -1,7 +1,66 @@
+import json
 import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
+
+from app.tools import calculate
+
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "calculate",
+            "description": "计算两个数字的加减乘除。用户出现明确计算需求时必须调用此工具，不要自己心算。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "left": {
+                        "type": "number",
+                        "description": "左侧数字",
+                    },
+                    "right": {
+                        "type": "number",
+                        "description": "右侧数字",
+                    },
+                    "operator": {
+                        "type": "string",
+                        "enum": ["+", "-", "*", "/"],
+                        "description": "运算符",
+                    },
+                },
+                "required": ["left", "right", "operator"],
+                "additionalProperties": False,
+            },
+        },
+    }
+]
+
+
+def execute_tool(name: str, arguments: str) -> str:
+    if name != "calculate":
+        return f"未知工具：{name}"
+
+    try:
+        data = json.loads(arguments)
+        left = data["left"]
+        right = data["right"]
+        operator = data["operator"]
+
+        if isinstance(left, bool) or isinstance(right, bool):
+            raise ValueError("数字参数不能是布尔值。")
+        if not isinstance(left, (int, float)):
+            raise ValueError("left 必须是数字。")
+        if not isinstance(right, (int, float)):
+            raise ValueError("right 必须是数字。")
+
+        result = calculate(left, right, operator)
+        print(f"[Tool] calculate({left}, {right}, '{operator}') -> {result}")
+        return str(result)
+
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+        return f"工具执行失败：{error}"
 
 
 def main() -> None:
@@ -23,13 +82,13 @@ def main() -> None:
         }
     ]
 
-    print("DeepSeek 聊天已启动，输入 exit 退出。")
+    print("DeepSeek Agent 已启动，输入 exit 退出。")
 
     while True:
         user_input = input("\nYou: ").strip()
 
         if user_input.lower() == "exit":
-            print("已退出聊天。")
+            print("已退出 Agent。")
             break
 
         if not user_input:
@@ -42,21 +101,37 @@ def main() -> None:
             }
         )
 
-        response = client.chat.completions.create(
-            model="deepseek-v4-flash",
-            messages=messages,
-            extra_body={"thinking": {"type": "disabled"}},
-        )
+        for _ in range(4):
+            response = client.chat.completions.create(
+                model="deepseek-v4-flash",
+                messages=messages,
+                tools=TOOLS,
+                tool_choice="auto",
+                extra_body={"thinking": {"type": "disabled"}},
+            )
 
-        answer = response.choices[0].message.content
-        print(f"Assistant: {answer}")
+            message = response.choices[0].message
+            messages.append(message)
 
-        messages.append(
-            {
-                "role": "assistant",
-                "content": answer,
-            }
-        )
+            if not message.tool_calls:
+                print(f"Assistant: {message.content}")
+                break
+
+            for tool_call in message.tool_calls:
+                result = execute_tool(
+                    tool_call.function.name,
+                    tool_call.function.arguments,
+                )
+
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": result,
+                    }
+                )
+        else:
+            print("Assistant: 工具调用次数达到上限，任务已停止。")
 
 
 if __name__ == "__main__":
