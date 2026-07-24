@@ -52,7 +52,7 @@ def main() -> None:
     retriever = ChromaSemanticRetriever()
 
     results = retriever.search(
-        "居民做饭和取暖可以使用什么能源？"
+        "哪种天然气形式便于远距离运输？"
     )
 
     for result in results:
