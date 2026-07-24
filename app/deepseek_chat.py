@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from app.tools import calculate, read_file
+from app.retrieval import search_notes
 
 TOOLS = [
     {
@@ -38,17 +39,17 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "read_file",
-            "description": "读取 data 文件夹内指定的 UTF-8 文本文件。",
+            "name": "search_notes",
+            "description": "从 data 文件夹的学习资料中检索与用户问题相关的内容。涉及天然气、四川盆地、能源资料时优先使用该工具。",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "filename": {
+                    "query": {
                         "type": "string",
-                        "description": "文件名，例如 energy_note.txt，不包含路径。",
+                        "description": "用于检索资料的关键词或问题。",
                     }
                 },
-                "required": ["filename"],
+                "required": ["query"],
                 "additionalProperties": False,
             },
         },
@@ -77,6 +78,12 @@ def execute_tool(name: str, arguments: str) -> str:
             print(f"[Tool] read_file('{filename}')")
             return result
 
+        if name == "search_notes":
+            query = data["query"]
+            result = search_notes(query)
+            print(f"[Tool] search_notes('{query}') -> 找到 {len(result)} 份资料")
+            return json.dumps(result, ensure_ascii=False)
+
         return f"未知工具：{name}"
 
     except (
@@ -104,7 +111,13 @@ def main() -> None:
     messages = [
         {
             "role": "system",
-            "content": "你是一个简洁、友好的大模型学习助手。",
+            "content": (
+            "你是一个能源学习助手。回答天然气、四川盆地、能源资料等问题时，"
+            "必须先调用 search_notes 检索 data 文件夹中的资料，再仅依据检索结果回答。"
+            "若检索结果为空，请明确说明资料中没有相关内容，不要自行编造。"
+            "不得补充检索资料中没有明确出现的地名、数据或事实。"
+            "回答末尾必须用“资料来源：文件名”的格式列出实际使用过的资料文件。"
+        ),
         }
     ]
 
