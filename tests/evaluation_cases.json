@@ -14,5 +14,29 @@
   {
     "question": "页岩气在哪个重要产气区域开发？",
     "expected_source": "sichuan_basin.txt"
+  },
+  {
+    "question": "哪种天然气形式更便于远距离储存和运输？",
+    "expected_source": "liquefied_natural_gas.txt"
+  },
+  {
+    "question": "通过什么设施可以把天然气输送到城市用户？",
+    "expected_source": "natural_gas_pipeline.txt"
+  },
+  {
+    "question": "利用太阳能电池板发电属于什么能源？",
+    "expected_source": "solar_energy.txt"
+  },
+  {
+    "question": "风力机把什么能量转换为电能？",
+    "expected_source": "wind_energy.txt"
+  },
+  {
+    "question": "哪种传统化石能源燃烧时通常碳排放较高？",
+    "expected_source": "coal.txt"
+  },
+  {
+    "question": "哪种非常规天然气资源开发常结合水平井和水力压裂？",
+    "expected_source": "shale_gas.txt"
   }
 ]
