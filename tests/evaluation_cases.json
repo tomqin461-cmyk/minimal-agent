@@ -1,0 +1,18 @@
+[
+  {
+    "question": "居民做饭和取暖可以使用什么能源？",
+    "expected_source": "natural_gas.txt"
+  },
+  {
+    "question": "四川盆地重点开发哪些天然气资源？",
+    "expected_source": "sichuan_basin.txt"
+  },
+  {
+    "question": "哪种化石能源燃烧时的二氧化碳通常低于煤炭和石油？",
+    "expected_source": "natural_gas.txt"
+  },
+  {
+    "question": "页岩气在哪个重要产气区域开发？",
+    "expected_source": "sichuan_basin.txt"
+  }
+]
