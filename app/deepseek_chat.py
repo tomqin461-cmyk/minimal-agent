@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from app.tools import calculate, read_file
 from app.retrieval import search_notes
+from app.vector_retrieval import SemanticRetriever
 
 TOOLS = [
     {
@@ -53,9 +54,37 @@ TOOLS = [
                 "additionalProperties": False,
             },
         },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_semantic_notes",
+            "description": "使用本地向量模型，从 data 文件夹中按语义检索资料。回答天然气、四川盆地、能源等自然语言问题时优先使用此工具。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "用户的完整自然语言问题。",
+                    }
+                },
+                "required": ["query"],
+                "additionalProperties": False,
+            },
+        },
     }
 ]
+semantic_retriever: SemanticRetriever | None = None
 
+
+def get_semantic_retriever() -> SemanticRetriever:
+    global semantic_retriever
+
+    if semantic_retriever is None:
+        print("[System] 正在加载本地向量模型并建立内存索引...")
+        semantic_retriever = SemanticRetriever()
+
+    return semantic_retriever
 
 def execute_tool(name: str, arguments: str) -> str:
 
@@ -82,6 +111,15 @@ def execute_tool(name: str, arguments: str) -> str:
             query = data["query"]
             result = search_notes(query)
             print(f"[Tool] search_notes('{query}') -> 找到 {len(result)} 份资料")
+            return json.dumps(result, ensure_ascii=False)
+
+        if name == "search_semantic_notes":
+            query = data["query"]
+            result = get_semantic_retriever().search(query)
+            print(
+                f"[Tool] search_semantic_notes('{query}') "
+                f"-> 找到 {len(result)} 个文本块"
+            )
             return json.dumps(result, ensure_ascii=False)
 
         return f"未知工具：{name}"
@@ -113,7 +151,7 @@ def main() -> None:
             "role": "system",
             "content": (
             "你是一个能源学习助手。回答天然气、四川盆地、能源资料等问题时，"
-            "必须先调用 search_notes 检索 data 文件夹中的资料，再仅依据检索结果回答。"
+            "必须先调用 search_semantic_notes检索 data 文件夹中的资料，再仅依据检索结果回答。"
             "若检索结果为空，请明确说明资料中没有相关内容，不要自行编造。"
             "不得补充检索资料中没有明确出现的地名、数据或事实。"
             "回答末尾必须用“资料来源：文件名”的格式列出实际使用过的资料文件。"

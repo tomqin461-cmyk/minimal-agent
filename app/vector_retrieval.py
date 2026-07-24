@@ -57,7 +57,12 @@ class SemanticRetriever:
             show_progress_bar=False,
         )
 
-    def search(self, query: str, top_k: int = 3) -> list[dict]:
+    def search(
+            self,
+            query: str,
+            top_k: int = 2,
+            min_score: float = 0.40,
+    ) -> list[dict]:
         query_embedding = self.model.encode(
             [QUERY_INSTRUCTION + query],
             normalize_embeddings=True,
@@ -72,6 +77,7 @@ class SemanticRetriever:
                 "score": float(scores[index]),
             }
             for index in indices
+            if scores[index] >= min_score
         ]
 
 
