@@ -24,7 +24,14 @@ def main() -> None:
     ).tolist()
 
     client = chromadb.PersistentClient(path=str(DATABASE_DIRECTORY))
-    collection = client.get_or_create_collection(COLLECTION_NAME)
+
+    try:
+        client.delete_collection(COLLECTION_NAME)
+        print("[System] 已删除旧索引。")
+    except ValueError:
+        print("[System] 未找到旧索引，将创建新索引。")
+
+    collection = client.create_collection(COLLECTION_NAME)
 
     collection.upsert(
         ids=[
