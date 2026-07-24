@@ -6,7 +6,7 @@ from openai import OpenAI
 
 from app.tools import calculate, read_file
 from app.retrieval import search_notes
-from app.vector_retrieval import SemanticRetriever
+from app.chroma_retrieval import ChromaSemanticRetriever
 
 TOOLS = [
     {
@@ -74,16 +74,15 @@ TOOLS = [
         },
     }
 ]
-semantic_retriever: SemanticRetriever | None = None
+semantic_retriever: ChromaSemanticRetriever | None = None
 
 
-def get_semantic_retriever() -> SemanticRetriever:
+def get_semantic_retriever() -> ChromaSemanticRetriever:
     global semantic_retriever
 
     if semantic_retriever is None:
-        print("[System] 正在加载本地向量模型并建立内存索引...")
-        semantic_retriever = SemanticRetriever()
-
+        print("[System] 正在加载本地向量模型和持久化向量数据库...")
+        semantic_retriever = ChromaSemanticRetriever()
     return semantic_retriever
 
 def execute_tool(name: str, arguments: str) -> str:
