@@ -132,7 +132,10 @@ def execute_tool(name: str, arguments: str) -> str:
     ) as error:
         return f"工具执行失败：{error}"
 
-def ask_agent(question: str) -> dict:
+def ask_agent(
+    question: str,
+    history: list[dict] | None = None,
+) -> dict:
     """回答一个独立问题，供网页/API 调用。"""
     load_dotenv()
 
@@ -157,6 +160,7 @@ def ask_agent(question: str) -> dict:
                 "回答末尾必须用“资料来源：文件名”的格式列出实际使用过的资料文件。"
             ),
         },
+        *(history or []),
         {
             "role": "user",
             "content": question,
