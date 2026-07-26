@@ -132,6 +132,80 @@ def execute_tool(name: str, arguments: str) -> str:
     ) as error:
         return f"工具执行失败：{error}"
 
+def ask_agent(question: str) -> dict:
+    """回答一个独立问题，供网页/API 调用。"""
+    load_dotenv()
+
+    api_key = os.getenv("DEEPSEEK_API_KEY")
+    if not api_key:
+        raise RuntimeError("没有读取到 DEEPSEEK_API_KEY，请检查 .env 文件。")
+
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.deepseek.com",
+    )
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "你是一个能源学习助手。回答天然气、四川盆地、能源资料等问题时，"
+                "必须先调用 search_semantic_notes 检索 data 文件夹中的资料，"
+                "再仅依据检索结果回答。"
+                "若检索结果为空，请明确说明资料中没有相关内容，不要自行编造。"
+                "不得补充检索资料中没有明确出现的地名、数据或事实。"
+                "回答末尾必须用“资料来源：文件名”的格式列出实际使用过的资料文件。"
+            ),
+        },
+        {
+            "role": "user",
+            "content": question,
+        },
+    ]
+    sources: set[str] = set()
+    for _ in range(4):
+        response = client.chat.completions.create(
+            model="deepseek-v4-flash",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto",
+            extra_body={"thinking": {"type": "disabled"}},
+        )
+
+        message = response.choices[0].message
+        messages.append(message)
+
+        if not message.tool_calls:
+            return {
+                "answer": message.content or "模型没有返回内容。",
+                "sources": sorted(sources),
+            }
+
+        for tool_call in message.tool_calls:
+            result = execute_tool(
+                tool_call.function.name,
+                tool_call.function.arguments,
+            )
+            if tool_call.function.name == "search_semantic_notes":
+                search_results = json.loads(result)
+
+                for item in search_results:
+                    source = item.get("source")
+                    if source:
+                        sources.add(source)
+
+            messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result,
+                }
+            )
+
+    return {
+        "answer": "工具调用次数达到上限，任务已停止。",
+        "sources": sorted(sources),
+    }
 
 def main() -> None:
     load_dotenv()
