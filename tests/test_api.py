@@ -24,6 +24,12 @@ def test_chat_returns_agent_answer(monkeypatch) -> None:
         return {
             "answer": "页岩气和常规天然气。",
             "sources": ["sichuan_basin.txt"],
+            "references": [
+                {
+                    "source": "sichuan_basin.txt",
+                    "content": "页岩气和常规天然气是四川盆地天然气开发的重要类型。",
+                }
+            ],
         }
 
     monkeypatch.setattr(api, "ask_agent", fake_ask_agent)
@@ -39,6 +45,12 @@ def test_chat_returns_agent_answer(monkeypatch) -> None:
     assert response.json() == {
         "answer": "页岩气和常规天然气。",
         "sources": ["sichuan_basin.txt"],
+        "references": [
+            {
+                "source": "sichuan_basin.txt",
+                "content": "页岩气和常规天然气是四川盆地天然气开发的重要类型。",
+            }
+        ],
         "status": "success",
     }
 
@@ -63,16 +75,24 @@ def test_chat_passes_history_to_agent(monkeypatch) -> None:
             {
                 "role": "user",
                 "content": "四川盆地重点开发哪些天然气资源？",
+
             },
             {
                 "role": "assistant",
                 "content": "页岩气和常规天然气。",
+
             },
         ]
 
         return {
             "answer": "页岩气。",
             "sources": ["sichuan_basin.txt"],
+            "references": [
+                {
+                    "source": "sichuan_basin.txt",
+                    "content": "页岩气和常规天然气是四川盆地天然气开发的重要类型。",
+                }
+            ],
         }
 
     monkeypatch.setattr(api, "ask_agent", fake_ask_agent)

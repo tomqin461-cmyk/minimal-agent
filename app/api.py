@@ -40,5 +40,6 @@ def chat(request: ChatRequest) -> dict:
     return {
         "answer": result["answer"],
         "sources": result["sources"],
+        "references": result["references"],
         "status": "success",
     }

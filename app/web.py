@@ -13,7 +13,17 @@ def backend_is_available() -> bool:
         }
     except requests.RequestException:
         return False
+def show_references(references: list[dict]) -> None:
+    if not references:
+        return
 
+    with st.expander("查看检索证据"):
+        for reference in references:
+            source = reference.get("source", "未知文件")
+            content = reference.get("content", "")
+
+            st.markdown(f"**{source}**")
+            st.write(content)
 
 st.set_page_config(
     page_title="能源 RAG Agent",
@@ -48,6 +58,10 @@ for message in st.session_state.messages:
             st.caption(
                 "检索到的资料：" + "、".join(message["sources"])
             )
+        if message["role"] == "assistant":
+            show_references(message.get("references", []))
+
+
 
 question = st.chat_input(
     "输入天然气、四川盆地或能源相关问题",
@@ -88,6 +102,7 @@ if question:
                 result = response.json()
                 answer = result["answer"]
                 sources = result.get("sources", [])
+                references = result.get("references", [])
 
                 st.markdown(answer)
 
@@ -95,12 +110,14 @@ if question:
                     st.caption(
                         "检索到的资料：" + "、".join(sources)
                     )
+                show_references(references)
 
                 st.session_state.messages.append(
                     {
                         "role": "assistant",
                         "content": answer,
                         "sources": sources,
+                        "references": references,
                     }
                 )
 
@@ -113,5 +130,6 @@ if question:
                         "role": "assistant",
                         "content": error_message,
                         "sources": [],
+                        "references": [],
                     }
                 )

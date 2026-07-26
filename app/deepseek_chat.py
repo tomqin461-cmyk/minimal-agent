@@ -167,6 +167,7 @@ def ask_agent(
         },
     ]
     sources: set[str] = set()
+    references: list[dict] = []
     for _ in range(4):
         response = client.chat.completions.create(
             model="deepseek-v4-flash",
@@ -183,6 +184,7 @@ def ask_agent(
             return {
                 "answer": message.content or "模型没有返回内容。",
                 "sources": sorted(sources),
+                "references": references,
             }
 
         for tool_call in message.tool_calls:
@@ -195,9 +197,18 @@ def ask_agent(
 
                 for item in search_results:
                     source = item.get("source")
+                    content = item.get("content")
+
                     if source:
                         sources.add(source)
 
+                    if source and content:
+                        references.append(
+                            {
+                                "source": source,
+                                "content": content,
+                            }
+                        )
             messages.append(
                 {
                     "role": "tool",
@@ -209,6 +220,7 @@ def ask_agent(
     return {
         "answer": "工具调用次数达到上限，任务已停止。",
         "sources": sorted(sources),
+        "references": references,
     }
 
 def main() -> None:
